@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>火星基地生命保障推演系统 · MLSS</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header id="topbar">
+  <div class="brand">
+    <span class="logo">◈</span>
+    <div>
+      <h1>火星基地生命保障推演</h1>
+      <span class="sub">Mars Life-Support Sandbox · 氧气 / 水循环 / 舱压 / 电力 / 乘员 统一调度</span>
+    </div>
+  </div>
+  <div class="clock-wrap">
+    <div class="clock" id="sim-clock">T+00:00</div>
+    <div class="clock-sub"><span id="sim-date">第 1 火星日</span></div>
+  </div>
+  <div class="transport">
+    <button id="btn-pause" class="btn primary">⏸ 暂停</button>
+    <select id="speed" title="推演速度">
+      <option value="0">单步</option>
+      <option value="60">×1（1 分钟/秒）</option>
+      <option value="600" selected>×10（10 分钟/秒）</option>
+      <option value="1800">×30</option>
+      <option value="6000">×100</option>
+    </select>
+    <button id="btn-step" class="btn">⏭ +1 分钟</button>
+  </div>
+  <div class="savelink">
+    <span id="save-state" class="save-state">已同步</span>
+    <button id="btn-export" class="btn ghost small" title="导出存档 JSON">导出</button>
+    <button id="btn-import" class="btn ghost small" title="导入存档 JSON">导入</button>
+    <input type="file" id="import-file" accept="application/json" hidden>
+    <button id="btn-reset" class="btn ghost small danger" title="放弃当前推演并重置">重置</button>
+  </div>
+</header>
+
+<section id="metrics" class="metrics-bar">
+  <div class="metric" id="m-oxygen"><span class="mlabel">氧气保障</span><span class="mvalue">--</span><span class="mbar"><i></i></span></div>
+  <div class="metric" id="m-water"><span class="mlabel">饮用水保障</span><span class="mvalue">--</span><span class="mbar"><i></i></span></div>
+  <div class="metric" id="m-pressure"><span class="mlabel">舱压余量</span><span class="mvalue">--</span><span class="mbar"><i></i></span></div>
+  <div class="metric" id="m-power"><span class="mlabel">电力续航</span><span class="mvalue">--</span><span class="mbar"><i></i></span></div>
+  <div class="metric" id="m-crew"><span class="mlabel">乘员状态</span><span class="mvalue">--</span><span class="mbar"><i></i></span></div>
+  <div class="metric overall" id="m-overall"><span class="mlabel">综合剩余保障时间</span><span class="mvalue">--</span><span class="mbar"><i></i></span></div>
+</section>
+
+<main id="layout">
+  <section id="schematic-panel" class="panel">
+    <div class="panel-head">
+      <h2>基地拓扑 · 资源流向</h2>
+      <div class="legend">
+        <span><i class="dot air"></i>舱口空气流向</span>
+        <span><i class="dot power"></i>电力母线</span>
+        <span><i class="dot water"></i>水/氧气经管道分配（右侧面板）</span>
+        <span><i class="dot leak"></i>泄漏 / 封闭</span>
+      </div>
+    </div>
+    <div id="schematic"></div>
+    <div class="panel-foot" id="sel-hint">点击舱室或管线查看详情并下发指令；图例颜色表示该节点最严重告警等级。</div>
+  </section>
+
+  <aside id="side">
+    <div class="panel tabs" id="side-tabs">
+      <nav>
+        <button data-tab="control" class="active">调度</button>
+        <button data-tab="forecast">延迟影响预测</button>
+        <button data-tab="events">事件 / 因果链</button>
+        <button data-tab="checkpoints">可恢复节点</button>
+      </nav>
+
+      <div class="tabpane active" data-pane="control">
+        <div id="selection-empty" class="empty">尚未选择对象。<br>在左侧拓扑图中点击一个舱室或连接管线。</div>
+        <div id="selection-detail" hidden></div>
+        <div class="quick-ops">
+          <h3>快速注入（情景演练）</h3>
+          <button class="btn ghost small" data-scenario="leak">注入气闸微流星泄漏</button>
+          <button class="btn ghost small" data-scenario="scrubber">让 CO₂ 洗涤器故障</button>
+          <button class="btn ghost small" data-scenario="power">砍半反应堆出力</button>
+        </div>
+      </div>
+
+      <div class="tabpane" data-pane="forecast">
+        <div class="pane-head"><h3>120 分钟前向推演</h3><span class="hint" id="forecast-hint">选择操作后，系统将显示其延迟影响</span></div>
+        <div id="forecast-baseline" class="fc-block"></div>
+        <div id="forecast-proposal" class="fc-block" hidden></div>
+      </div>
+
+      <div class="tabpane" data-pane="events">
+        <div class="pane-head filters">
+          <button class="chip active" data-filter="all">全部</button>
+          <button class="chip" data-filter="critical">严重</button>
+          <button class="chip" data-filter="action">操作</button>
+        </div>
+        <div id="event-list"></div>
+      </div>
+
+      <div class="tabpane" data-pane="checkpoints">
+        <div class="pane-head"><h3>稳定快照</h3><button class="btn ghost small" id="btn-snapshot">＋ 手动打点</button></div>
+        <div id="checkpoint-list"></div>
+      </div>
+    </div>
+  </aside>
+</main>
+
+<footer id="bottombar">
+  <div id="strategy-strip"></div>
+</footer>
+
+<div id="toast-layer"></div>
+<div id="modal-layer" hidden></div>
+
+<script src="js/engine/util.js"></script>
+<script src="js/engine/config.js"></script>
+<script src="js/engine/state.js"></script>
+<script src="js/engine/sim.js"></script>
+<script src="js/engine/forecast.js"></script>
+<script src="js/engine/commands.js"></script>
+<script src="js/engine/manager.js"></script>
+<script src="js/engine/persist.js"></script>
+<script src="js/ui/toast.js"></script>
+<script src="js/ui/schematic.js"></script>
+<script src="js/ui/controls.js"></script>
+<script src="js/ui/forecast.js"></script>
+<script src="js/ui/events.js"></script>
+<script src="js/ui/checkpoints.js"></script>
+<script src="js/ui/metrics.js"></script>
+<script src="js/ui/strategy.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
