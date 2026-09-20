@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>火星基地生命保障推演系统 · Mars Life Support Sandbox</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- 顶部栏 -->
+  <header id="topbar">
+    <div class="brand">
+      <span class="logo">◈</span>
+      <div>
+        <div class="brand-title">阿瑞斯基地 · 生命保障推演系统</div>
+        <div class="brand-sub">ARES BASE — LIFE SUPPORT SURVIVAL SIMULATION</div>
+      </div>
+    </div>
+
+    <div class="clock-block">
+      <div id="mission-clock" class="mission-clock">T+00:00:00</div>
+      <div id="rescue-clock" class="rescue-clock">救援抵达 --:--:--</div>
+      <div id="run-status" class="run-status">已暂停</div>
+    </div>
+
+    <div class="speed-controls">
+      <button class="btn speed-btn" data-speed="0" title="暂停">❚❚</button>
+      <button class="btn speed-btn" data-speed="1">1×</button>
+      <button class="btn speed-btn" data-speed="30">30×</button>
+      <button class="btn speed-btn active" data-speed="100">100×</button>
+      <button class="btn speed-btn" data-speed="300">300×</button>
+    </div>
+
+    <div class="top-actions">
+      <button id="btn-compare" class="btn">⚖ 策略对照</button>
+      <button id="btn-export" class="btn ghost" title="导出存档 JSON">导出</button>
+      <label class="btn ghost file-btn">导入<input type="file" id="file-import" accept="application/json" hidden></label>
+      <button id="btn-reset" class="btn ghost danger" title="放弃全部推演，重新开始">重置</button>
+    </div>
+  </header>
+
+  <!-- 策略标签栏 -->
+  <nav id="strategy-bar">
+    <div id="strategy-tabs" class="strategy-tabs"></div>
+    <div class="strategy-actions">
+      <button id="btn-new-strategy" class="btn small" title="从当前策略的最近稳定点分叉出新救援策略">⑂ 分叉新策略</button>
+    </div>
+  </nav>
+
+  <!-- 告警横幅 -->
+  <div id="alarm-banner" class="alarm-banner hidden"></div>
+
+  <main id="main-grid">
+    <!-- 左：主态势图 -->
+    <section id="map-panel" class="panel">
+      <div class="panel-head">
+        <span class="panel-title">舱室资源流向图</span>
+        <div class="legend">
+          <span><i class="dot gas"></i>气体</span>
+          <span><i class="dot water"></i>水</span>
+          <span><i class="dot power"></i>电力</span>
+          <span><i class="dot leak"></i>泄漏</span>
+        </div>
+      </div>
+      <div id="schematic" class="schematic-wrap"></div>
+      <div id="map-hint" class="map-hint">点击舱室查看详情与操作 · 点击管道调节阀门</div>
+    </section>
+
+    <!-- 右：检查器 -->
+    <aside id="inspector" class="panel">
+      <div id="inspector-body" class="inspector-body"></div>
+    </aside>
+
+    <!-- 底部：事件/因果链 -->
+    <section id="events-panel" class="panel">
+      <div class="panel-head">
+        <span class="panel-title">事件链与操作日志</span>
+        <div class="filter-bar">
+          <label class="chk"><input type="checkbox" id="filter-alarm" checked>仅看告警</label>
+          <button id="btn-rollback" class="btn small danger" title="回退到上一稳定节点（当前策略）">↩ 恢复上一稳定点</button>
+          <span id="checkpoint-info" class="checkpoint-info"></span>
+        </div>
+      </div>
+      <div id="event-feed" class="event-feed"></div>
+    </section>
+  </main>
+
+  <!-- 策略对照抽屉 -->
+  <div id="compare-drawer" class="drawer hidden">
+    <div class="drawer-mask"></div>
+    <div class="drawer-panel">
+      <div class="drawer-head">
+        <span>多策略同步对照</span>
+        <button id="btn-close-compare" class="btn small ghost">关闭</button>
+      </div>
+      <div id="compare-body" class="compare-body"></div>
+    </div>
+  </div>
+
+  <!-- 失败操作 toast -->
+  <div id="toast-stack" class="toast-stack"></div>
+
+  <footer id="statusbar">
+    <span id="save-status">自动存档已开启</span>
+    <span class="spacer"></span>
+    <span id="survival-status">基地剩余保障时间：计算中…</span>
+  </footer>
+</div>
+
+<script src="js/sim/utils.js"></script>
+<script src="js/sim/config.js"></script>
+<script src="js/sim/engine.js"></script>
+<script src="js/sim/scenario.js"></script>
+<script src="js/sim/persistence.js"></script>
+<script src="js/sim/store.js"></script>
+<script src="js/ui/events.js"></script>
+<script src="js/ui/schematic.js"></script>
+<script src="js/ui/inspector.js"></script>
+<script src="js/ui/compare.js"></script>
+<script src="js/ui/app.js"></script>
+</body>
+</html>
